@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
-import router
-import time
+from router import Router
 import matplotlib.pyplot as plt
 import numpy as np
 import time
@@ -34,6 +33,7 @@ def route_local_search(iterations):
     min_path_list = None
     min_students_dict = None
     print('Local search: {0} iterations'.format(iterations))
+    router = Router()
     for i1 in range(iterations):
         global_path_list, global_students_dict = router.route_local_search()
         if global_path_list is None or global_students_dict is None:
@@ -45,8 +45,10 @@ def route_local_search(iterations):
             minvalue = dist
             min_path_list = global_path_list
             min_students_dict = global_students_dict
+            place_allocation_status = router.get_allocated_places()
+
     print('{0:.5f}s'.format(time.perf_counter()-t0))
-    return [min_path_list, min_students_dict]
+    return min_path_list, min_students_dict, place_allocation_status
 
 
 def init_pyplot():

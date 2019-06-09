@@ -9,7 +9,7 @@ class Router:
     def __init__(self):
         self.stops = None
         self.students = None
-        self.maxwalk = 450  # If a unit garbage is within 450 meters from another place, then it is possible that it
+        self.maxwalk = 300  # If a unit garbage is within 450 meters from another place, then it is possible that it
         # can be allocated to that place to choose potential stops
         self.capacity = 1500
         self.student_near_stops = None
@@ -58,7 +58,7 @@ class Router:
         for key, value in self.students.items():
             self.student_near_stops[key] = set()
             for sn in range(num_of_places):
-                if self.dist_mat[self.serial_numbers[value]][self.serial_numbers[sn]] <= 450:
+                if self.dist_mat[self.serial_numbers[value]][self.serial_numbers[sn]] <= self.maxwalk:
                     self.student_near_stops[key].add(sn)
 
     def generate_stop_near_stops(self):
@@ -188,6 +188,7 @@ class Router:
                         next_stop = None
                         global_path_list.extend([local_path_list])
 
+        assert(not global_students)
         self.global_path_list = global_path_list
         self.global_students_dict = global_students_dict
         return [self.global_path_list, self.global_students_dict]
@@ -212,12 +213,31 @@ class Router:
         for path in self.global_path_list:
             for i in range(len(path)+1):
                 if i == 0:
-                    dist += np.linalg.norm(np.array(self.stops[0])-np.array(self.stops[path[0]]))
+                    dist += self.dist_mat[self.serial_numbers[0]][self.serial_numbers[path[0]]]
                 elif i == len(path):
-                    dist += np.linalg.norm(np.array(self.stops[0])-np.array(self.stops[path[i-1]]))
+                    dist += self.dist_mat[self.serial_numbers[0]][self.serial_numbers[path[i-1]]]
                 elif i < len(path):
-                    dist += np.linalg.norm(np.array(self.stops[path[i]])-np.array(self.stops[path[i-1]]))
+                    dist += self.dist_mat[self.serial_numbers[path[i]]][self.serial_numbers[path[i-1]]]
         return dist
+
+    def get_allocated_places(self):
+        """
+        As the name goes.
+        :return: place_allocation_status:
+            {<serial number of a place>: (<serial number of a destination stop>, <serial number of a destination
+            stop>, ...}
+        """
+        place_allocation_status = dict()
+        num_of_places = self.dist_mat.shape[0]
+        for sn in range(num_of_places):
+            place_allocation_status[sn] = list()
+        for student_id, dest in self.global_students_dict.items():
+            if dest not in place_allocation_status[self.students[student_id]]:
+                place_allocation_status[self.students[student_id]].append(dest)
+        for sn in range(num_of_places):
+            place_allocation_status[sn] = tuple(place_allocation_status[sn])
+
+        return place_allocation_status
 
 
 def process_file(fn):

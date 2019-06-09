@@ -35,6 +35,14 @@ def load_data():
     return dist_mat, garbage_quantities, serial_numbers
 
 
+def load_location():
+    df = pd.read_excel('data/各区域边界经纬度.xlsx', skiprows=[0, 1, 2], index_col=0)
+    df = df[['经度', '纬度']]
+
+    return df
+
+
 if __name__ == "__main__":
     print('load_data.py')
-    dist_mat, garbage_quantities, serial_numbers = load_data()
+    # dist_mat, garbage_quantities, serial_numbers = load_data()
+    df = load_location()
