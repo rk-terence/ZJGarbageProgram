@@ -109,4 +109,4 @@ venv.bak/
 *.jpg
 *.png
 .idea/
-data/
+# data/

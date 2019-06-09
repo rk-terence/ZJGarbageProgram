@@ -9,7 +9,7 @@ if __name__ == '__main__':
 
     print('Router init', end=' ')
     t0 = time.perf_counter()
-    router = router.Router(fn)
+    router = router.Router()
     stops = router.get_stops()
     students = router.get_students()
     maxwalk = router.get_maxwalk()
