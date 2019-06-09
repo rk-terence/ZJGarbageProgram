@@ -4,8 +4,6 @@
 # import numpy as np
 import pandas as pd
 
-# TODO: adapt the algorithm
-
 
 def load_data():
     """
@@ -36,13 +34,15 @@ def load_data():
 
 
 def load_location():
-    df = pd.read_excel('data/各区域边界经纬度.xlsx', skiprows=[0, 1, 2], index_col=0)
-    df = df[['经度', '纬度']]
+    df = pd.read_excel('data/LongitudeNLatitude.xlsx', skiprows=[0, 1, 2], index_col=0)
+    locations = dict()
+    for place_name in df.index:
+        locations[place_name] = (df['经度'][place_name], df['纬度'][place_name])
 
-    return df
+    return locations
 
 
 if __name__ == "__main__":
     print('load_data.py')
     # dist_mat, garbage_quantities, serial_numbers = load_data()
-    df = load_location()
+    locations = load_location()
