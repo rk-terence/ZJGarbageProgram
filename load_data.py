@@ -34,6 +34,12 @@ def load_data():
 
 
 def load_location():
+    """
+    This function can return the longitude and latitude of each place (not processed with serial numbers)
+    :return: locations: {<name of place>: (<longitude>, <latitude>),
+                         <name of place>: (<longitude>, <latitude>),
+                         ...}
+    """
     df = pd.read_excel('data/LongitudeNLatitude.xlsx', skiprows=[0, 1, 2], index_col=0)
     locations = dict()
     for place_name in df.index:
@@ -44,5 +50,10 @@ def load_location():
 
 if __name__ == "__main__":
     print('load_data.py')
-    # dist_mat, garbage_quantities, serial_numbers = load_data()
+    dist_mat, garbage_quantities, serial_numbers = load_data()
     locations = load_location()
+
+    # update locations with serial numbers:
+    new_locations = dict()
+    for sn in serial_numbers:
+        new_locations[sn] = locations[serial_numbers[sn]]
