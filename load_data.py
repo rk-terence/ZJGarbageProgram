@@ -21,11 +21,17 @@ def load_data():
 
     # Read the number of people for each place:
     num_of_people_s = dict(pd.read_excel('data/num_of_people.xlsx', index_col=0)['平均'])
-    serial_numbers = dict(zip(range(1, num_of_places+1), num_of_people_s.keys()))  # The serial number for each place in
-    # ZJG campus.
-    garbage_quantities = dict(zip(range(1, num_of_places+1), num_of_people_s.values()))  # establish the amount of
-    # garbage of each place according to their serial number.
-
+    serial_numbers = dict(zip(range(num_of_places), num_of_people_s.keys()))  # The serial number for each
+    # place in ZJG campus.
+    # Move xiaoyiyuan to the first (base place)
+    for key, value in serial_numbers.items():
+        if value == '校医院':
+            serial_numbers[key] = serial_numbers.pop(0)
+            serial_numbers[0] = '校医院'
+    garbage_quantities = dict()
+    for sn in range(num_of_places):
+        garbage_quantities[sn] = num_of_people_s[serial_numbers[sn]]
+    garbage_quantities[0] = 0  # base stop: 0
     return dist_mat, garbage_quantities, serial_numbers
 
 

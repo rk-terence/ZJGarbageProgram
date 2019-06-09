@@ -9,8 +9,9 @@ class Router:
     def __init__(self):
         self.stops = None
         self.students = None
-        self.maxwalk = None
-        self.capacity = 500
+        self.maxwalk = 450  # If a unit garbage is within 450 meters from another place, then it is possible that it
+        # can be allocated to that place to choose potential stops
+        self.capacity = 1500
         self.student_near_stops = None
         self.stop_near_stops = None
         self.stop_near_students = None
@@ -24,7 +25,24 @@ class Router:
         self.generate_stop_near_students()
 
     def generate_students_and_stops(self):
-        self.students = self.stops = self.dist_mat.shape[0]
+        """
+        we process keys as if we process the students. It changes self.students and self.stops, they are like -
+        self.students: {student_id: place_serial_number
+                        ...}
+        self.stops: {serial_number: 1
+                     ...}
+        """
+        num_of_places = self.dist_mat.shape[0]
+        student_id = 1
+        self.students = dict()
+        for sn in range(num_of_places):
+            for i in range(int(self.garbage_quantities[sn])):
+                self.students[student_id] = sn
+                student_id += 1
+
+        self.stops = dict()
+        for sn in range(num_of_places):
+            self.stops[sn] = 1
 
     def generate_student_near_stops(self):
         """
@@ -35,11 +53,13 @@ class Router:
                   )
         """
         # For now, every place is only available for one stop - its place.
+        num_of_places = self.dist_mat.shape[0]
         self.student_near_stops = dict()
-        num_of_students = self.dist_mat.shape[0]
-        for sn in range(1, num_of_students+1):
-            self.student_near_stops[sn] = set()
-            self.student_near_stops[sn].add(sn)  # Only in its own place
+        for key, value in self.students.items():
+            self.student_near_stops[key] = set()
+            for sn in range(num_of_places):
+                if self.dist_mat[self.serial_numbers[value]][self.serial_numbers[sn]] <= 450:
+                    self.student_near_stops[key].add(sn)
 
     def generate_stop_near_stops(self):
         """
@@ -50,9 +70,17 @@ class Router:
                     <distance>), ...)
                   )
         """
+        num_of_places = self.dist_mat.shape[0]
         self.stop_near_stops = dict()
-        for sn, place_name in self.serial_numbers.items():
-            self.stop_near_stops[sn] = tuple(dict(self.dist_mat[place_name]).items())
+        for sn in range(num_of_places):
+            this_sn_dict = dict(self.dist_mat[self.serial_numbers[sn]])
+            # this_sn_dict.pop(self.serial_numbers[sn])  # delete self
+            for snn in range(num_of_places):
+                if snn != sn:
+                    this_sn_dict[snn] = this_sn_dict.pop(self.serial_numbers[snn])  # Change string to serial number
+                else:
+                    this_sn_dict.pop(self.serial_numbers[snn])
+            self.stop_near_stops[sn] = tuple(sorted(this_sn_dict.items(), key=lambda x : x[1]))
 
     def generate_stop_near_students(self):
         """
@@ -63,15 +91,17 @@ class Router:
                   )
         """
         self.stop_near_students = dict()
-        num_of_stops = self.dist_mat.shape[0]
-        for sn in range(1, num_of_stops + 1):
-            self.student_near_stops[sn] = set()
-            self.student_near_stops[sn].add(sn)  # Only in its own place
+        num_of_places = self.dist_mat.shape[0]
+        for sn in range(num_of_places):
+            self.stop_near_students[sn] = set()
+        for key, value in self.student_near_stops.items():
+            for sn in value:
+                self.stop_near_students[sn].add(key)
 
     def route_local_search(self):
         # find route algorithm
         global_stops = list(self.stops.copy().keys())[1:]  # [1:] - remove base stop 0 which is unnecessary
-        base_stop = global_stops[0]
+        base_stop = 0
         global_path_list = []
 
         # init students list and zero dictionary
@@ -86,7 +116,7 @@ class Router:
             next_stop = random.choice(local_stops)  # if there's fault with routing, replace this
             # with debug stops list
             # next_stop = stops_debug.pop()
-            current_stop = 0  # base stop, always 0, by definition of file format
+            # current_stop = 0  # base stop, always 0, by definition of file format
             capacity = self.capacity
             local_path_list = list()
             while True:
@@ -111,12 +141,11 @@ class Router:
 
                 if capacity < len(student_single):  # students with the same stop
                     if not local_stops:
-                        if len(global_students) > capacity:
-                            return None, None  # not feasible solution - conflict: not enough
-                            # capacity to assign students to stop
+                        if capacity == 1500:
+                            return None, None  # if this is a first bus here, it means there isn't a feasible solution
                         global_path_list.extend([local_path_list])
-                        next_stop = None
-                        break
+                        # next_stop = None
+                        break  # Go to outer loop, use another car
                     local_stops.remove(next_stop)
                     for s in self.stop_near_stops[next_stop]:
                         if s[0] in local_stops:
@@ -151,7 +180,8 @@ class Router:
                                 next_stop = s[0]
                                 break
                         # Truncate - if the distance is higher than that from base_stop to next_stop, abort:
-                        if np.linalg.norm(current_stop-next_stop) > np.linalg.norm(next_stop-base_stop):
+                        if self.dist_mat[self.serial_numbers[current_stop]][self.serial_numbers[next_stop]] > \
+                                self.dist_mat[self.serial_numbers[next_stop]][self.serial_numbers[base_stop]]:
                             next_stop = None
                             global_path_list.extend([local_path_list])
                     else:
@@ -225,5 +255,5 @@ def process_file(fn):
 
 if __name__ == '__main__':
     print('route.py')
-    router = Router('instances/sbr1.txt')
+    router = Router()
     router.route_local_search()
