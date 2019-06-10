@@ -111,3 +111,4 @@ venv.bak/
 .idea/
 # data/
 *.docx
+presentation/
